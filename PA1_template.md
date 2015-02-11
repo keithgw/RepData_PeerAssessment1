@@ -1,19 +1,16 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-author: "Keith G. Williams"
-output: 
-  html_document:
-    keep_md: true
----
+# Reproducible Research: Peer Assessment 1
+Keith G. Williams  
 Load Packages
-```{r, results="hide", message=FALSE}
+
+```r
 library(lubridate)
 library(dplyr)
 library(ggplot2)
 library(tidyr)
 ```
 ## Loading and preprocessing the data
-```{r}
+
+```r
 # read data
 data <- read.csv("activity.csv", colClasses = c("integer", 
                                                 "character", 
@@ -28,7 +25,8 @@ data$interval <- data$interval %/% 100 * 60 + data$interval %% 100
 ## What is mean total number of steps taken per day?
 
 Summarize the total number of steps by day and plot a histogram.
-```{r}
+
+```r
 # summarise total steps by date
 by_day <- data %>% 
     group_by(date) %>% 
@@ -39,16 +37,31 @@ ggplot(by_day, aes(total / 1000)) +
     geom_bar(binwidth=2, fill="steelblue", col="black") + 
     labs(x="Steps (thousands)", y="Count") + 
     ggtitle("Total Number of Steps per Day")
-```    
+```
+
+![](PA1_template_files/figure-html/unnamed-chunk-3-1.png) 
 
 Mean and Median of total steps by day:
-```{r}
+
+```r
 mean(by_day$total, na.rm=TRUE)
+```
+
+```
+## [1] 10766.19
+```
+
+```r
 median(by_day$total, na.rm=TRUE)
 ```
 
+```
+## [1] 10765
+```
+
 ## What is the average daily activity pattern?
-```{r, fig.width=10}
+
+```r
 # summarise average steps by interval
 by_interval <- data %>% 
     group_by(interval) %>% 
@@ -70,22 +83,45 @@ ggplot(by_interval, aes(interval, mean)) +
           title = element_text(size = 20))
 ```
 
+![](PA1_template_files/figure-html/unnamed-chunk-5-1.png) 
+
 5-minute interval with maximum average number of steps:
-```{r}
+
+```r
 by_interval %>% 
     filter(mean == max(mean)) %>% 
     mutate(interval = interval %/% 60 * 100 + interval %% 60)
 ```
 
+```
+## Source: local data frame [1 x 2]
+## 
+##   interval     mean
+## 1      835 206.1698
+```
+
 ## Imputing missing values
 Total and proportion of rows with missing values:
-```{r}
+
+```r
 sum(is.na(data$steps))
+```
+
+```
+## [1] 2304
+```
+
+```r
 mean(is.na(data$steps))
 ```
 
+```
+## [1] 0.1311475
+```
+
 Impute missing values with the mean number of steps across all days for a given interval.
-```{r}
+
+```r
 imputed <- data %>% 
     group_by(interval) %>% 
     mutate(steps = ifelse(is.na(steps), 
@@ -94,7 +130,8 @@ imputed <- data %>%
 ```
 
 Plot a new histogram of total steps by day with imputed data.
-```{r}
+
+```r
 # summarize imputed data, total steps by day
 imputed_by_day <- imputed %>% 
     group_by(date) %>% 
@@ -107,32 +144,60 @@ ggplot(imputed_by_day, aes(imputed_total / 1000)) +
     ggtitle("Total Number of Steps per Day")
 ```
 
+![](PA1_template_files/figure-html/unnamed-chunk-9-1.png) 
+
 Mean and median of total steps by day with imputed values:
-```{r}
+
+```r
 mu <- mean(imputed_by_day$imputed_total, na.rm=TRUE)
 difference_in_means <- mu - mean(by_day$total, na.rm=TRUE)
 # print imputed average and difference from original mean
 c(mu, difference_in_means)
+```
+
+```
+## [1] 10749.77049   -16.41819
+```
+
+```r
 med <- median(imputed_by_day$imputed_total, na.rm=TRUE)
 difference_in_medians <- med - median(by_day$total, na.rm=TRUE)
 # print imputed median and difference from original median
 c(med, difference_in_medians)
 ```
 
+```
+## [1] 10641  -124
+```
+
 Compare imputed results to original results in which NAs were ignored:
-```{r}
+
+```r
 # merge original and imputed data for comparison
 compare <- left_join(by_day, imputed_by_day) %>%
     gather(imputed, steps, 2:3)
+```
 
+```
+## Joining by: "date"
+```
+
+```r
 # plot
 ggplot(compare, aes(steps, color=imputed)) + geom_density()
 ```
 
+```
+## Warning: Removed 8 rows containing non-finite values (stat_density).
+```
+
+![](PA1_template_files/figure-html/unnamed-chunk-11-1.png) 
+
 From the above plot, one can see that the mean and median are only slightly shifted to the left, but the variance for the imputed data set is much lower.  This difference is sensitive to the strategy for imputing missing values.  Since the mean by interval was used, it follows that the imputed data is more concentrated about the mean.
 
 ## Are there differences in activity patterns between weekdays and weekends?
-```{r, fig.width=10}
+
+```r
 # add weekend distinction variable
 data <- data %>% 
     mutate(weekend = ifelse(weekdays(date) %in% c("Saturday", "Sunday"),
@@ -158,3 +223,5 @@ ggplot(weekend_by_interval, aes(interval, mean)) +
           strip.text = element_text(size = 16),
           title = element_text(size = 20))
 ```
+
+![](PA1_template_files/figure-html/unnamed-chunk-12-1.png) 
